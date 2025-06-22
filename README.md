@@ -118,8 +118,8 @@ Within ~20–30 seconds, all recon data will be uploaded to your Dropbox silentl
 
 ---
 
-⚠️ Warning
 
-This script is very comprehensive and may trigger AV/EDR tools or raise suspicion due to the extensive system probing. Only use it in legal and authorized environments, such as penetration testing engagements or lab testing.
+⚠️ Warning. this is to be used for educational purposes only. I am not liable for any damages nor legal trouble. only use on target machines with explicit permission or in a lab environment. again I am not liable for any damages. 
+
 
 IF YOU ENJOY THIS PAYLOAD AS MUCH AS I HAVE PLEASE GIVE THIS REPO A STARE. 
