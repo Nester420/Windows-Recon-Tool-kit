@@ -46,3 +46,5 @@ Usage:
 Deploy the Ducky Script on a Windows target. Within minutes, all key recon and credential data is exfiltrated to Dropbox, while traces are scrubbed from the system.
 
 > Note: Replace "your_dropbox_url" with your Dropbox API token before deployment. Only use on systems you own or have explicit permission to test.
+>
+> If you enjoy this payload as much as I have please give this respiratory a star and a like it would be very much appreciated.
