@@ -1,23 +1,52 @@
-# Windows-Recon-Tool-kit
-Description: The Windows Recon Toolkit is an advanced, automated reconnaissance payload designed for use with the o.mg cable or compatible HID injection devices. Once executed on a Windows 10 or 11 machine, it rapidly collects a comprehensive snapshot of system and user security information for red team or audit purposes.
+This payload is a BadUSB (Ducky Script) Windows Recon Toolkit that automates full system reconnaissance on a target Windows machine using PowerShell, and exfiltrates the data to a Dropbox account.
 
-Features:
 
-Credential Harvesting:
-Extracts saved Wi-Fi network names and their cleartext passwords for all profiles on the system.
+---
 
-System & User Audit:
-Gathers detailed system information, computer specs, current user and group memberships, and active processes.
+🔧 How It Works
 
-Software & Patch Status:
-Lists installed software, running processes, open network ports, and applied system updates to help identify outdated software or vulnerabilities.
+The payload performs the following steps:
 
-Privilege Escalation Checks:
-Evaluates the machine for common privilege escalation vectors, including:
+🧠 1. Launch PowerShell
 
-Admin rights status
+GUI r → STRING powershell → ENTER
 
-UAC policy and AlwaysInstallElevated registry settings
+📁 2. Define Temporary Paths
+
+Creates three temp files:
+
+recon_report.txt (system info)
+
+clipboard.txt (clipboard dump)
+
+screenshot.jpg (screen capture)
+
+
+📡 3. Reconnaissance Collection
+
+Data gathered includes:
+
+Saved Wi-Fi credentials (SSID + password)
+
+System info (CPU, OS, RAM, etc.)
+
+User info (whoami /all)
+
+Installed programs
+
+Top processes by CPU usage
+
+Open network ports (netstat)
+
+Missing patches (Get-HotFix)
+
+Privilege escalation checks, including:
+
+Admin rights
+
+UAC settings
+
+AlwaysInstallElevated
 
 Unquoted service paths
 
@@ -25,26 +54,72 @@ Writable service binaries
 
 Weak scheduled tasks
 
-Writable user registry keys
+Writable registry keys
 
-WSUS hijack vectors
+WSUS hijack info
 
-AV/EDR (Antivirus/Endpoint Detection) products installed
-
-
-Clipboard & Screenshot Capture:
-Dumps the current clipboard content and takes a live screenshot of the user’s desktop environment.
-
-Automated Exfiltration:
-All gathered artifacts (recon report, clipboard, and screenshot) are uploaded directly to a Dropbox account via the API, using a supplied OAuth token for secure and rapid exfiltration.
-
-Stealth & Cleanup:
-Cleans up all temporary files and clears PowerShell command history to reduce forensic evidence of the operation.
+AV/EDR detection
 
 
-Usage:
-Deploy the Ducky Script on a Windows target. Within minutes, all key recon and credential data is exfiltrated to Dropbox, while traces are scrubbed from the system.
 
-> Note: Replace "your_dropbox_url" with your Dropbox API token before deployment. Only use on systems you own or have explicit permission to test.
->
-> If you enjoy this payload as much as I have please give this respiratory a star and a like it would be very much appreciated.
+📋 4. Clipboard Dump
+
+Saves the current clipboard contents.
+
+📸 5. Screenshot
+
+Captures the entire screen using .NET libraries.
+
+☁️ 6. Dropbox Upload
+
+Uploads all three files to the attacker's Dropbox account using the Dropbox API and a personal token:
+
+$token = "your_drop_box_token"
+
+You must replace this with your own Dropbox API token.
+
+🧹 7. Cleanup
+
+Deletes recon files and screenshot
+
+Clears PowerShell history
+
+
+❌ 8. Exit
+
+Closes PowerShell to hide tracks.
+
+
+---
+
+🚀 How to Use
+
+1. Replace Token:
+
+Update the line STRING $token = "your_drop_box_token" with your Dropbox API bearer token.
+
+
+
+2. Flash the Payload:
+
+Use a BadUSB device (e.g., Rubber Ducky, Flipper Zero, OMG Cable) to flash this script.
+
+
+
+3. Deploy:
+
+Plug into a target Windows machine.
+
+Within ~20–30 seconds, all recon data will be uploaded to your Dropbox silently.
+
+
+
+
+
+---
+
+⚠️ Warning
+
+This script is very comprehensive and may trigger AV/EDR tools or raise suspicion due to the extensive system probing. Only use it in legal and authorized environments, such as penetration testing engagements or lab testing.
+
+IF YOU ENJOY THIS PAYLOAD AS MUCH AS I HAVE PLEASE GIVE THIS REPO A STARE. 
