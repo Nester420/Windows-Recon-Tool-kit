@@ -100,9 +100,9 @@ Update the line STRING $token = "your_drop_box_token" with your Dropbox API bear
 
 
 
-2. Flash the Payload:
+2. place the Payload:
 
-Use a BadUSB device (e.g., Rubber Ducky, Flipper Zero, OMG Cable) to flash this script.
+Use a BadUSB device (e.g., Rubber Ducky, OMG Cable) if used on a rubber ducky use hak5s payload studio to convert the payload into a .bin file name it inject.bin and place it on the root directory of the rubber ducky. if useing with the omg cable simply place the payload in one of the payload slots and execute the payload. 
 
 
 
