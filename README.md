@@ -28,9 +28,7 @@ Data gathered includes:
 
 Saved Wi-Fi credentials (SSID + password)
 
-System info (CPU, OS, RAM, etc.)
-
-User info (whoami /all)
+System info
 
 Installed programs
 
@@ -46,12 +44,6 @@ Admin rights
 
 UAC settings
 
-AlwaysInstallElevated
-
-Unquoted service paths
-
-Writable service binaries
-
 Weak scheduled tasks
 
 Writable registry keys
@@ -66,11 +58,7 @@ AV/EDR detection
 
 Saves the current clipboard contents.
 
-📸 5. Screenshot
-
-Captures the entire screen using .NET libraries.
-
-☁️ 6. Dropbox Upload
+☁️ 5. Dropbox Upload
 
 Uploads all three files to the attacker's Dropbox account using the Dropbox API and a personal token:
 
