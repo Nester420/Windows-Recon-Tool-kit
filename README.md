@@ -1,3 +1,5 @@
+<img width="1721" height="914" alt="win11" src="https://github.com/user-attachments/assets/647ebf79-a3d2-47e1-b197-d16a3c58164a" />
+
 This payload is a BadUSB (Ducky Script) Windows Recon Toolkit that automates full system reconnaissance on a target Windows machine using PowerShell, and exfiltrates the data to a Dropbox account.
 
 
